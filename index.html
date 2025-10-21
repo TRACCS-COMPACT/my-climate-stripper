@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Climate Striper - Visualisez l'évolution du climat</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder@1.13.0/dist/Control.Geocoder.css" />
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌡️ Climate Striper</h1>
+            <p>Visualisez l'évolution de la température à travers les Climate Stripes</p>
+        </header>
+
+        <main>
+            <div class="controls">
+                <button id="selectLocationBtn" class="btn btn-primary">
+                    📍 Sélectionner un lieu
+                </button>
+                <div id="selectedLocation" class="selected-location" style="display: none;">
+                    <span id="locationName"></span>
+                    <button id="generateBtn" class="btn btn-secondary">Générer Climate Stripes</button>
+                </div>
+            </div>
+
+            <div id="map" class="map"></div>
+
+            <div id="result" class="result" style="display: none;">
+                <h3>Climate Stripes générées</h3>
+                <div id="climateStripes"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal pour sélection de lieu -->
+    <div id="locationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Choisir un lieu</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="search-section">
+                    <h3>Option 1: Rechercher un lieu</h3>
+                    <div class="search-container">
+                        <input type="text" id="locationSearch" placeholder="Tapez le nom d'une ville (ex: Grenoble, Paris, Lyon...)" />
+                        <button id="searchBtn" class="btn btn-search">🔍 Rechercher</button>
+                    </div>
+                    <div id="searchResults" class="search-results"></div>
+                </div>
+                
+                <div class="divider">
+                    <span>OU</span>
+                </div>
+                
+                <div class="map-section">
+                    <h3>Option 2: Cliquer sur la carte</h3>
+                    <p>Cliquez sur un point de la carte ci-dessous pour sélectionner un lieu</p>
+                    <div id="modalMap" class="modal-map"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="confirmLocationBtn" class="btn btn-primary" disabled>Confirmer la sélection</button>
+                <button id="cancelBtn" class="btn btn-secondary">Annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder@1.13.0/dist/Control.Geocoder.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
