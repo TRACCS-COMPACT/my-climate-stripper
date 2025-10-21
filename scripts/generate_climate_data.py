@@ -7,6 +7,8 @@ et les sauvegarder pour utilisation dans le site web.
 import cdsapi
 import json
 import os
+import requests
+import time
 from datetime import datetime, timedelta
 import numpy as np
 
@@ -14,11 +16,12 @@ def get_climate_data(lat, lon, start_year=1975, end_year=2024):
     """
     Récupère les données de température pour un point géographique donné
     """
-    # Vérifier si le fichier de configuration CDS existe
+    # Essayer d'abord l'API CDS si configurée
     cds_config_path = os.path.expanduser('~/.cdsapirc')
     
     if os.path.exists(cds_config_path):
         try:
+            print("Tentative d'utilisation de l'API CDS...")
             c = cdsapi.Client()
             
             # Paramètres pour la requête ERA5
@@ -29,7 +32,7 @@ def get_climate_data(lat, lon, start_year=1975, end_year=2024):
                 'month': [str(month).zfill(2) for month in range(1, 13)],
                 'day': [str(day).zfill(2) for day in range(1, 32)],
                 'time': [f"{hour:02d}:00" for hour in range(0, 24, 6)],
-                'area': [lat + 0.1, lon - 0.1, lat - 0.1, lon + 0.1],  # Zone autour du point
+                'area': [lat + 0.1, lon - 0.1, lat - 0.1, lon + 0.1],
                 'format': 'netcdf',
             }
             
@@ -41,11 +44,81 @@ def get_climate_data(lat, lon, start_year=1975, end_year=2024):
             return generate_realistic_climate_data(start_year, end_year, lat)
             
         except Exception as e:
-            print(f"Erreur lors de la récupération des données CDS: {e}")
-            # Fallback vers des données simulées réalistes
-            return generate_realistic_climate_data(start_year, end_year, lat)
+            print(f"Erreur CDS API: {e}")
+            print("Tentative d'utilisation de l'API Open-Meteo...")
+            return get_openmeteo_data(lat, lon, start_year, end_year)
     else:
-        print("Configuration CDS non trouvée, utilisation de données simulées réalistes")
+        print("Configuration CDS non trouvée, utilisation de l'API Open-Meteo...")
+        return get_openmeteo_data(lat, lon, start_year, end_year)
+
+def get_openmeteo_data(lat, lon, start_year, end_year):
+    """
+    Récupère les données climatiques via l'API Open-Meteo (ERA5-Land)
+    """
+    try:
+        # Construire l'URL pour l'API Open-Meteo
+        base_url = "https://archive-api.open-meteo.com/v1/archive"
+        
+        # Paramètres de la requête
+        params = {
+            'latitude': lat,
+            'longitude': lon,
+            'start_date': f"{start_year}-01-01",
+            'end_date': f"{end_year}-12-31",
+            'daily': 'temperature_2m_mean',
+            'timezone': 'auto'
+        }
+        
+        print(f"Requête Open-Meteo pour {lat:.2f}, {lon:.2f} ({start_year}-{end_year})")
+        
+        # Faire la requête
+        response = requests.get(base_url, params=params, timeout=30)
+        response.raise_for_status()
+        
+        data = response.json()
+        
+        if 'daily' not in data:
+            raise Exception("Données non disponibles dans la réponse")
+        
+        # Extraire les données de température
+        daily_temps = data['daily']['temperature_2m_mean']
+        daily_dates = data['daily']['time']
+        
+        # Calculer les moyennes annuelles
+        yearly_temps = {}
+        for i, date_str in enumerate(daily_dates):
+            year = int(date_str[:4])
+            temp = daily_temps[i]
+            
+            if year not in yearly_temps:
+                yearly_temps[year] = []
+            yearly_temps[year].append(temp)
+        
+        # Calculer les moyennes annuelles
+        years = []
+        temperatures = []
+        
+        for year in sorted(yearly_temps.keys()):
+            if start_year <= year <= end_year:
+                avg_temp = sum(yearly_temps[year]) / len(yearly_temps[year])
+                years.append(year)
+                temperatures.append(round(avg_temp, 1))
+        
+        print(f"Récupéré {len(temperatures)} années de données via Open-Meteo")
+        
+        # Délai pour éviter les limites de taux
+        time.sleep(1)
+        
+        return {
+            'years': years,
+            'temperatures': temperatures,
+            'location': {'lat': lat, 'lon': lon},
+            'data_source': 'openmeteo_era5land'
+        }
+        
+    except Exception as e:
+        print(f"Erreur Open-Meteo API: {e}")
+        print("Utilisation de données simulées réalistes...")
         return generate_realistic_climate_data(start_year, end_year, lat)
 
 def generate_realistic_climate_data(start_year, end_year, lat):
@@ -112,11 +185,16 @@ def main():
     
     all_data = {}
     
-    for location in locations:
+    for i, location in enumerate(locations):
         print(f"Traitement de {location['name']}...")
         data = get_climate_data(location['lat'], location['lon'])
         data['name'] = location['name']
         all_data[location['name']] = data
+        
+        # Délai entre les villes pour éviter les limites de taux
+        if i < len(locations) - 1:
+            print("Attente 2 secondes avant la prochaine ville...")
+            time.sleep(2)
     
     # Sauvegarder toutes les données
     save_climate_data(all_data, 'french_cities_climate.json')

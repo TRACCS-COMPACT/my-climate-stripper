@@ -17,6 +17,8 @@ Un site web interactif pour visualiser l'évolution de la température à traver
 - Leaflet.js pour les cartes interactives
 - OpenStreetMap pour les données cartographiques
 - Nominatim pour la géocodage
+- **Open-Meteo API** pour les données climatiques réelles (ERA5-Land)
+- CDS API (optionnel) pour les données Copernicus
 - GitHub Pages pour l'hébergement
 
 ## 📱 Utilisation
@@ -69,8 +71,13 @@ open index.html
 
 ### Données climatiques réelles
 
-Pour utiliser les vraies données climatiques de l'API CDS :
+Le site utilise automatiquement l'**API Open-Meteo** (ERA5-Land) qui :
+- ✅ **Aucune clé API requise**
+- ✅ **Données historiques 1940→présent**
+- ✅ **Requêtes directes par coordonnées**
+- ✅ **Limites de taux généreuses**
 
+**Optionnel** : Pour utiliser l'API CDS Copernicus :
 1. Créez un compte sur [Copernicus Climate Data Store](https://cds.climate.copernicus.eu/)
 2. Acceptez les conditions d'utilisation
 3. Générez une clé API dans votre profil
