@@ -31,8 +31,56 @@ Un site web interactif pour visualiser l'évolution de la température à traver
 
 ## 🌐 Déploiement
 
-Le site est automatiquement déployé sur GitHub Pages à l'adresse :
-https://[votre-username].github.io/my-climate-stripper
+### Configuration GitHub Pages
+
+1. **Forkez ce repository** sur votre compte GitHub
+
+2. **Activez GitHub Pages** :
+   - Allez dans Settings > Pages
+   - Sélectionnez "Deploy from a branch"
+   - Choisissez "main" branch
+   - Le site sera disponible à : `https://[votre-username].github.io/my-climate-stripper`
+
+3. **Configurez l'API CDS (optionnel)** :
+   - Créez un compte sur [Copernicus Climate Data Store](https://cds.climate.copernicus.eu/)
+   - Générez une clé API
+   - Dans votre repository, allez dans Settings > Secrets and variables > Actions
+   - Ajoutez un nouveau secret nommé `CDS_API_KEY` avec votre clé API
+   - Le workflow GitHub Actions générera automatiquement les vraies données climatiques
+
+### Déploiement local
+
+```bash
+# Cloner le repository
+git clone https://github.com/[votre-username]/my-climate-stripper.git
+cd my-climate-stripper
+
+# Installer les dépendances Python (optionnel)
+pip install -r requirements.txt
+
+# Générer les données climatiques (optionnel)
+python scripts/generate_climate_data.py
+
+# Ouvrir le site
+open index.html
+```
+
+## 🔧 Configuration avancée
+
+### Données climatiques réelles
+
+Pour utiliser les vraies données climatiques de l'API CDS :
+
+1. Créez un compte sur [Copernicus Climate Data Store](https://cds.climate.copernicus.eu/)
+2. Acceptez les conditions d'utilisation
+3. Générez une clé API dans votre profil
+4. Ajoutez la clé comme secret GitHub Actions (`CDS_API_KEY`)
+
+### Personnalisation
+
+- **Villes par défaut** : Modifiez la liste dans `scripts/generate_climate_data.py`
+- **Période de données** : Changez `start_year` et `end_year` dans le script Python
+- **Style** : Personnalisez les couleurs dans `styles.css`
 
 ## 📄 Licence
 

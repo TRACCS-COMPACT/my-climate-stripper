@@ -223,45 +223,89 @@ function confirmLocation() {
     closeModalFunction();
 }
 
-// Génération des Climate Stripes (simulation)
-function generateClimateStripes() {
+// Génération des Climate Stripes avec vraies données
+async function generateClimateStripes() {
     generateBtn.innerHTML = '<div class="loading"></div> Génération...';
     generateBtn.disabled = true;
     
-    // Simulation d'une génération (dans un vrai projet, ceci ferait appel à une API)
-    setTimeout(() => {
-        // Générer des données de température simulées pour les 50 dernières années
-        const years = [];
-        const temperatures = [];
-        const currentYear = new Date().getFullYear();
+    try {
+        // Essayer de charger les données climatiques réelles
+        let climateData = null;
         
-        for (let year = currentYear - 49; year <= currentYear; year++) {
-            years.push(year);
-            // Simulation de données avec une tendance au réchauffement
-            const baseTemp = 10 + (year - currentYear + 49) * 0.02; // Tendance de réchauffement
-            const variation = (Math.random() - 0.5) * 4; // Variation aléatoire
-            temperatures.push(baseTemp + variation);
+        try {
+            const response = await fetch('data/global_climate_data.json');
+            if (response.ok) {
+                climateData = await response.json();
+            }
+        } catch (error) {
+            console.log('Données climatiques non disponibles, utilisation de données simulées');
+        }
+        
+        let temperatures;
+        let years;
+        
+        if (climateData && climateData.paris) {
+            // Utiliser les vraies données
+            temperatures = climateData.paris.temperatures;
+            years = climateData.paris.years;
+        } else {
+            // Fallback vers des données simulées réalistes
+            temperatures = generateSimulatedData();
+            years = Array.from({length: 50}, (_, i) => 2024 - 49 + i);
         }
         
         // Créer les Climate Stripes
-        createClimateStripes(temperatures);
+        createClimateStripes(temperatures, years);
         
         // Afficher le résultat
         resultDiv.style.display = 'block';
         resultDiv.scrollIntoView({ behavior: 'smooth' });
         
+    } catch (error) {
+        console.error('Erreur lors de la génération:', error);
+        // Fallback vers des données simulées
+        const temperatures = generateSimulatedData();
+        const years = Array.from({length: 50}, (_, i) => 2024 - 49 + i);
+        createClimateStripes(temperatures, years);
+        resultDiv.style.display = 'block';
+    } finally {
         generateBtn.innerHTML = 'Générer Climate Stripes';
         generateBtn.disabled = false;
-    }, 2000);
+    }
+}
+
+// Génération de données simulées réalistes
+function generateSimulatedData() {
+    const temperatures = [];
+    const currentYear = new Date().getFullYear();
+    
+    for (let i = 0; i < 50; i++) {
+        const year = currentYear - 49 + i;
+        // Tendance de réchauffement climatique réaliste
+        const warmingTrend = (year - 1975) * 0.02;
+        // Température de base selon la latitude (approximation)
+        const baseTemp = 15 - (Math.abs(selectedLocation?.lat || 45) - 45) * 0.3;
+        // Variabilité interannuelle
+        const variation = (Math.random() - 0.5) * 3;
+        // Variation cyclique (cycles climatiques)
+        const cycle = 2 * Math.sin(2 * Math.PI * (year - 1975) / 11); // Cycle de 11 ans
+        
+        temperatures.push(baseTemp + warmingTrend + variation + cycle);
+    }
+    
+    return temperatures;
 }
 
 // Création des Climate Stripes
-function createClimateStripes(temperatures) {
+function createClimateStripes(temperatures, years = null) {
     const minTemp = Math.min(...temperatures);
     const maxTemp = Math.max(...temperatures);
     const tempRange = maxTemp - minTemp;
     
     climateStripesDiv.innerHTML = '';
+    
+    // Utiliser les années fournies ou générer des années par défaut
+    const displayYears = years || Array.from({length: temperatures.length}, (_, i) => 2024 - temperatures.length + 1 + i);
     
     // Créer une div pour chaque année
     temperatures.forEach((temp, index) => {
@@ -274,7 +318,7 @@ function createClimateStripes(temperatures) {
             margin: 0 1px;
             border-radius: 2px;
         `;
-        yearDiv.title = `Année ${2024 - 49 + index}: ${temp.toFixed(1)}°C`;
+        yearDiv.title = `Année ${displayYears[index]}: ${temp.toFixed(1)}°C`;
         climateStripesDiv.appendChild(yearDiv);
     });
     
@@ -287,12 +331,35 @@ function createClimateStripes(temperatures) {
         font-size: 0.8rem;
         color: #666;
     `;
+    
+    const startYear = displayYears[0];
+    const endYear = displayYears[displayYears.length - 1];
+    const midYear = displayYears[Math.floor(displayYears.length / 2)];
+    
     yearLabels.innerHTML = `
-        <span>1975</span>
-        <span>2000</span>
-        <span>2024</span>
+        <span>${startYear}</span>
+        <span>${midYear}</span>
+        <span>${endYear}</span>
     `;
     climateStripesDiv.appendChild(yearLabels);
+    
+    // Ajouter des informations sur les données
+    const infoDiv = document.createElement('div');
+    infoDiv.style.cssText = `
+        margin-top: 15px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 5px;
+        font-size: 0.9rem;
+        color: #666;
+    `;
+    infoDiv.innerHTML = `
+        <strong>Informations :</strong><br>
+        Période : ${startYear} - ${endYear}<br>
+        Température moyenne : ${(temperatures.reduce((a, b) => a + b, 0) / temperatures.length).toFixed(1)}°C<br>
+        Écart de température : ${(maxTemp - minTemp).toFixed(1)}°C
+    `;
+    climateStripesDiv.appendChild(infoDiv);
 }
 
 // Conversion température vers couleur
