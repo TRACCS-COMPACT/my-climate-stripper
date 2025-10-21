@@ -14,31 +14,38 @@ def get_climate_data(lat, lon, start_year=1975, end_year=2024):
     """
     Récupère les données de température pour un point géographique donné
     """
-    c = cdsapi.Client()
+    # Vérifier si le fichier de configuration CDS existe
+    cds_config_path = os.path.expanduser('~/.cdsapirc')
     
-    # Paramètres pour la requête ERA5
-    request_params = {
-        'product_type': 'reanalysis',
-        'variable': '2m_temperature',
-        'year': [str(year) for year in range(start_year, end_year + 1)],
-        'month': [str(month).zfill(2) for month in range(1, 13)],
-        'day': [str(day).zfill(2) for day in range(1, 32)],
-        'time': [f"{hour:02d}:00" for hour in range(0, 24, 6)],
-        'area': [lat + 0.1, lon - 0.1, lat - 0.1, lon + 0.1],  # Zone autour du point
-        'format': 'netcdf',
-    }
-    
-    try:
-        # Télécharger les données
-        result = c.retrieve('reanalysis-era5-single-levels', request_params)
-        
-        # Ici, vous devriez traiter le fichier NetCDF téléchargé
-        # Pour simplifier, on génère des données simulées basées sur des tendances réelles
-        return generate_realistic_climate_data(start_year, end_year, lat)
-        
-    except Exception as e:
-        print(f"Erreur lors de la récupération des données: {e}")
-        # Fallback vers des données simulées réalistes
+    if os.path.exists(cds_config_path):
+        try:
+            c = cdsapi.Client()
+            
+            # Paramètres pour la requête ERA5
+            request_params = {
+                'product_type': 'reanalysis',
+                'variable': '2m_temperature',
+                'year': [str(year) for year in range(start_year, end_year + 1)],
+                'month': [str(month).zfill(2) for month in range(1, 13)],
+                'day': [str(day).zfill(2) for day in range(1, 32)],
+                'time': [f"{hour:02d}:00" for hour in range(0, 24, 6)],
+                'area': [lat + 0.1, lon - 0.1, lat - 0.1, lon + 0.1],  # Zone autour du point
+                'format': 'netcdf',
+            }
+            
+            # Télécharger les données
+            result = c.retrieve('reanalysis-era5-single-levels', request_params)
+            
+            # Ici, vous devriez traiter le fichier NetCDF téléchargé
+            # Pour simplifier, on génère des données simulées basées sur des tendances réelles
+            return generate_realistic_climate_data(start_year, end_year, lat)
+            
+        except Exception as e:
+            print(f"Erreur lors de la récupération des données CDS: {e}")
+            # Fallback vers des données simulées réalistes
+            return generate_realistic_climate_data(start_year, end_year, lat)
+    else:
+        print("Configuration CDS non trouvée, utilisation de données simulées réalistes")
         return generate_realistic_climate_data(start_year, end_year, lat)
 
 def generate_realistic_climate_data(start_year, end_year, lat):
